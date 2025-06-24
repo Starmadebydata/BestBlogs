@@ -4,7 +4,11 @@ import { analyzeArticlesBatch } from '@/lib/ai-analyzer';
 import { ArticleStore, FeedStore } from '@/lib/data-store';
 import { Article } from '@/types';
 
+export const maxDuration = 60; // Set max duration to 60 seconds
+
 export async function GET() {
+  const startTime = Date.now();
+  
   try {
     console.log('开始RSS更新任务...');
     
@@ -42,13 +46,34 @@ export async function GET() {
       });
     }
     
-    // 5. AI Analysis (limit to 20 articles to avoid API costs)
-    const articlesToAnalyze = uniqueArticles.slice(0, 20);
+    // 5. AI Analysis (limit to 10 articles to reduce processing time)
+    const articlesToAnalyze = uniqueArticles.slice(0, 10);
     const analysisRequests = articlesToAnalyze.map(article => ({
       title: article.title,
       content: article.description,
       url: article.url,
     }));
+    
+    // Check remaining time before starting AI analysis
+    const elapsedTime = Date.now() - startTime;
+    if (elapsedTime > 50000) { // If more than 50 seconds elapsed
+      console.log('时间不足，跳过AI分析步骤');
+      const processedArticles = uniqueArticles;
+      const allArticles = [...existingArticles, ...processedArticles];
+      await ArticleStore.save(allArticles);
+      
+      return NextResponse.json({
+        success: true,
+        message: 'RSS更新完成（已跳过AI分析以避免超时）',
+        stats: {
+          feeds: feeds.length,
+          articles: processedArticles.length,
+          analyzed: 0,
+          featured: 0,
+          translated: processedArticles.filter(a => a.isTranslated).length,
+        },
+      });
+    }
     
     const analysisResults = await analyzeArticlesBatch(analysisRequests);
     
@@ -73,7 +98,7 @@ export async function GET() {
     }
     
     // Add remaining articles without analysis
-    const remainingArticles = uniqueArticles.slice(20);
+    const remainingArticles = uniqueArticles.slice(10);
     processedArticles.push(...remainingArticles);
     
     // 7. Save all articles

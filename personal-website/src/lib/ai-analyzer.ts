@@ -129,9 +129,9 @@ export async function analyzeArticlesBatch(articles: AIAnalysisRequest[]): Promi
         console.log(`✗ 分析失败 [${i + 1}/${articles.length}]: ${articles[i].title.slice(0, 50)}...`);
       }
       
-      // Rate limiting: 1 request per 2 seconds for GPT-4
+      // Rate limiting: 1 request per 1 second for Gemini
       if (i < articles.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     } catch (error) {
       console.error(`Error analyzing article ${i}:`, error);
