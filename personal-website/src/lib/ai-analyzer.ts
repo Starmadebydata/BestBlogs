@@ -17,14 +17,29 @@ export async function analyzeArticle(request: AIAnalysisRequest): Promise<AIAnal
 Article Title: ${request.title}
 Article Content: ${request.content.slice(0, 3000)}...
 
-Please provide analysis result in JSON format:
+Please categorize and analyze this article. Choose the most appropriate category from:
+
+**Primary Categories:**
+- "AI最新动态" - Latest AI developments, model releases, research breakthroughs
+- "Vibe Coding" - Cool programming culture, developer lifestyle, fun tech content
+- "AI自媒体" - AI content creation, social media, digital marketing
+- "编程技术" - Programming techniques, frameworks, languages
+- "产品设计" - Product design, UX/UI, design systems
+- "商业科技" - Business technology, enterprise solutions
+- "创业投资" - Startups, investment, entrepreneurship
+- "开发工具" - Development tools, IDEs, productivity tools
+- "行业洞察" - Industry insights, market analysis, trends
+- "技术教程" - Technical tutorials, how-to guides
+
+Return JSON format:
 {
   "summary": "One-sentence summary of the article core content (within 50 words)",
   "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
   "score": 85,
   "tags": ["tag1", "tag2", "tag3"],
-  "category": "One of: AI/编程/产品/商业/设计", 
-  "language": "zh or en"
+  "category": "Choose from categories above", 
+  "language": "zh or en",
+  "highlights": ["Most interesting quote or insight from the article"]
 }
 
 Scoring criteria (0-100):
@@ -84,8 +99,9 @@ Please return pure JSON format without any other explanations.`;
       keyPoints: analysisResult.keyPoints || [],
       score: Math.min(100, Math.max(0, analysisResult.score || 0)),
       tags: analysisResult.tags || [],
-      category: analysisResult.category || 'AI',
+      category: analysisResult.category || 'AI最新动态',
       language: analysisResult.language || 'en',
+      highlights: analysisResult.highlights || [],
     };
     
   } catch (error) {

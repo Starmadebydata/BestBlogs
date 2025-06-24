@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ReportStore, ArticleStore } from '@/lib/data-store';
-import { generateDailyReportSummary } from '@/lib/ai-analyzer';
+import { DailyReportGenerator } from '@/lib/daily-report-generator';
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST() {
   try {
-    console.log('开始生成今日报告...');
+    console.log('开始生成今日智能报告...');
     
     // Get today's date
     const today = new Date().toISOString().split('T')[0];
@@ -49,56 +49,36 @@ export async function POST() {
       });
     }
     
-    // Get today's articles
-    const recentArticles = await ArticleStore.getRecentArticles(1, 200);
+    // Get recent articles (last 2 days to ensure sufficient content)
+    const recentArticles = await ArticleStore.getRecentArticles(2, 500);
     const todayArticles = recentArticles.filter(article => {
       const articleDate = new Date(article.publishedAt).toISOString().split('T')[0];
-      return articleDate === today;
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      // Include today's and yesterday's articles for better content
+      return articleDate === today || articleDate === yesterdayStr;
     });
     
-    // Get top articles with priority for analyzed ones
-    const analyzedArticles = todayArticles.filter(article => article.isAnalyzed && article.score && article.score >= 70);
-    const otherArticles = todayArticles.filter(article => !article.isAnalyzed || !article.score || article.score < 70);
-    
-    const topArticles = [
-      ...analyzedArticles.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 8),
-      ...otherArticles.slice(0, 2)
-    ].slice(0, 10);
-    
-    if (topArticles.length === 0) {
+    if (todayArticles.length === 0) {
       return NextResponse.json({
         success: false,
         message: '今日没有足够的文章生成报告',
       });
     }
     
-    // Generate AI summary
-    const aiSummary = await generateDailyReportSummary(topArticles);
-    
-    // Create report
-    const report = {
-      id: `report-${today}`,
-      date: today,
-      title: `WindFlash 技术日报 - ${new Date(today).toLocaleDateString('zh-CN', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })}`,
-      summary: aiSummary,
-      topArticles,
-      articleCount: todayArticles.length,
-      analyzedCount: analyzedArticles.length,
-      translatedCount: todayArticles.filter(a => a.isTranslated).length,
-      createdAt: new Date(),
-    };
+    // Generate enhanced daily report using new generator
+    const generator = new DailyReportGenerator();
+    const report = await generator.generateDailyReport(todayArticles, today);
     
     await ReportStore.add(report);
     
-    console.log('今日报告生成完成！');
+    console.log(`今日智能报告生成完成！包含 ${report.sections.length} 个分类，${report.totalArticles} 篇文章`);
     
     return NextResponse.json({
       success: true,
-      message: '今日报告生成成功',
+      message: '今日智能报告生成成功',
       data: report,
     });
     

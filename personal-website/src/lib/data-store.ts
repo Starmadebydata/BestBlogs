@@ -153,37 +153,6 @@ export class ReportStore {
       .slice(0, limit);
   }
 
-  static async createTodayReport(): Promise<DailyReport | null> {
-    const today = new Date().toISOString().split('T')[0];
-    const existingReport = await this.getByDate(today);
-    
-    if (existingReport) {
-      return existingReport;
-    }
-
-    const todayArticles = await ArticleStore.getTodayArticles();
-    const topArticles = todayArticles
-      .filter(article => article.isAnalyzed && article.score && article.score >= 75)
-      .sort((a, b) => (b.score || 0) - (a.score || 0))
-      .slice(0, 10);
-
-    if (topArticles.length === 0) {
-      return null;
-    }
-
-    const report: DailyReport = {
-      id: `report-${today}`,
-      date: today,
-      title: `AI创业者日报 - ${today}`,
-      summary: `今日精选了 ${topArticles.length} 篇优质技术文章，涵盖AI前沿、编程技术、产品创新等领域。`,
-      topArticles,
-      articleCount: todayArticles.length,
-      createdAt: new Date(),
-    };
-
-    await this.add(report);
-    return report;
-  }
 }
 
 /**

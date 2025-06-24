@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { ReportStore } from '@/lib/data-store';
 import DateDisplay from '@/components/ui/DateDisplay';
+import EnhancedDailyReport from '@/components/ui/EnhancedDailyReport';
+import { DailyReport } from '@/types';
 
 export default async function DailyReportPage() {
   const recentReports = await ReportStore.getRecent(10).catch(() => []);
@@ -21,78 +23,8 @@ export default async function DailyReportPage() {
 
         {/* Today's Report */}
         {todayReport ? (
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {todayReport.title}
-              </h2>
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                今日最新
-              </span>
-            </div>
-            
-            <div className="text-gray-600 mb-6">
-              <p className="text-lg leading-relaxed">{todayReport.summary}</p>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{todayReport.topArticles.length}</div>
-                <div className="text-sm text-gray-600">精选文章</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{todayReport.articleCount}</div>
-                <div className="text-sm text-gray-600">总文章数</div>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{todayReport.analyzedCount || 0}</div>
-                <div className="text-sm text-gray-600">AI分析</div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">{todayReport.translatedCount || 0}</div>
-                <div className="text-sm text-gray-600">中文翻译</div>
-              </div>
-            </div>
-
-            {/* Top Articles */}
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">今日精选文章</h3>
-              <div className="space-y-4">
-                {todayReport.topArticles.map((article, index) => (
-                  <div key={article.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-1">
-                          <span className="text-sm font-medium text-blue-600">#{index + 1}</span>
-                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                            {article.category}
-                          </span>
-                          {article.score && (
-                            <span className="text-sm text-gray-500">{article.score}分</span>
-                          )}
-                          {article.isTranslated && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                              中译
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="font-semibold text-gray-900 mb-1">
-                          <a href={article.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
-                            {article.title}
-                          </a>
-                        </h4>
-                        <p className="text-gray-600 text-sm mb-2">
-                          {article.summary}
-                        </p>
-                        <div className="text-xs text-gray-500">
-                          来源：{article.feedTitle} • <DateDisplay date={article.publishedAt} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="mb-12">
+            <EnhancedDailyReport report={todayReport} isToday={true} />
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-lg p-8 mb-12 text-center">
@@ -101,9 +33,9 @@ export default async function DailyReportPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">今日报告尚未生成</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">今日智能报告尚未生成</h3>
             <p className="text-gray-600 mb-4">
-              系统会在有足够优质文章时自动生成日报，请稍后再来查看。
+              系统会在有足够优质文章时自动生成智能分类日报，包含AI最新动态、Vibe Coding、AI自媒体等精彩内容。
             </p>
             <Link
               href="/articles"
@@ -132,8 +64,12 @@ export default async function DailyReportPage() {
                   
                   <div className="flex items-center justify-between">
                     <div className="flex space-x-4 text-sm text-gray-500">
-                      <span>{report.topArticles.length} 篇精选</span>
-                      <span>{report.articleCount} 篇总计</span>
+                      <span>
+                        {report.sections?.length || 0} 个分类
+                      </span>
+                      <span>
+                        {report.totalArticles || (report as DailyReport & { articleCount?: number }).articleCount || 0} 篇总计
+                      </span>
                     </div>
                     <Link
                       href={`/daily-report/${report.date}`}
