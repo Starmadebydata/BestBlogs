@@ -1,5 +1,5 @@
 /**
- * Translation service using OpenRouter API with DeepSeek model
+ * Translation service using OpenRouter API with configurable AI model
  */
 
 export interface TranslationRequest {
@@ -19,6 +19,7 @@ export interface TranslationResponse {
  */
 export async function translateText(request: TranslationRequest): Promise<TranslationResponse | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
+  const modelId = process.env.OPENROUTER_MODEL_ID || 'google/gemini-2.5-flash-lite-preview-06-17';
   
   if (!apiKey) {
     console.error('OpenRouter API key not found for translation');
@@ -36,21 +37,21 @@ export async function translateText(request: TranslationRequest): Promise<Transl
     };
   }
 
-  const prompt = `
-请将以下文本翻译成${to === 'zh' ? '中文' : to === 'en' ? '英文' : to}。
+  const targetLangName = to === 'zh' ? '中文' : to === 'en' ? 'English' : to;
+  
+  const prompt = `Translate the following text to ${targetLangName}:
 
-要求：
-1. 保持原文的意思和语调
-2. 使用自然流畅的表达
-3. 对于技术术语，使用常见的中文表达或保留英文原词
-4. 保持原文的格式和段落结构
-5. 如果是标题，请保持标题的简洁性
+Requirements:
+1. Maintain the original meaning and tone
+2. Use natural and fluent expressions
+3. For technical terms, use common ${targetLangName} expressions or keep English terms if appropriate
+4. Preserve original formatting and paragraph structure
+5. If it's a title, keep it concise
 
-原文：
+Text to translate:
 ${text}
 
-请直接返回翻译结果，不要包含任何解释或说明。
-`;
+Please return only the translation without any explanations or additional text.`;
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -60,11 +61,11 @@ ${text}
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-r1-0528:free',
+        model: modelId,
         messages: [
           {
             role: 'system',
-            content: '你是一个专业的翻译专家，擅长技术文档和新闻文章的翻译，能够准确传达原文的意思和语调。',
+            content: 'You are a professional translator specializing in technical documents and news articles. You accurately convey the meaning and tone of the original text.',
           },
           {
             role: 'user',

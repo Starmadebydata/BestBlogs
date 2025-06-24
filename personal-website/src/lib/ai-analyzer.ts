@@ -1,41 +1,40 @@
 import { AIAnalysisRequest, AIAnalysisResponse, Article } from '@/types';
 
 /**
- * Analyze article using OpenRouter API with DeepSeek model
+ * Analyze article using OpenRouter API with configurable AI model
  */
 export async function analyzeArticle(request: AIAnalysisRequest): Promise<AIAnalysisResponse | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
+  const modelId = process.env.OPENROUTER_MODEL_ID || 'google/gemini-2.5-flash-lite-preview-06-17';
   
   if (!apiKey) {
     console.error('OpenRouter API key not found');
     return null;
   }
   
-  const prompt = `
-请分析以下技术文章，并按照JSON格式返回分析结果：
+  const prompt = `Analyze the following technical article and return the analysis result in JSON format:
 
-文章标题：${request.title}
-文章内容：${request.content.slice(0, 3000)}...
+Article Title: ${request.title}
+Article Content: ${request.content.slice(0, 3000)}...
 
-请提供以下分析结果（请用JSON格式回复）：
+Please provide analysis result in JSON format:
 {
-  "summary": "一句话总结文章核心内容（50字以内）",
-  "keyPoints": ["关键要点1", "关键要点2", "关键要点3"],
+  "summary": "One-sentence summary of the article core content (within 50 words)",
+  "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
   "score": 85,
-  "tags": ["标签1", "标签2", "标签3"],
-  "category": "分类（AI/编程/产品/商业/设计之一）", 
-  "language": "zh或en"
+  "tags": ["tag1", "tag2", "tag3"],
+  "category": "One of: AI/编程/产品/商业/设计", 
+  "language": "zh or en"
 }
 
-评分标准（0-100分）：
-- 技术深度和准确性 (30%)
-- 实用性和可操作性 (25%) 
-- 内容新颖性和前瞻性 (20%)
-- 写作质量和清晰度 (15%)
-- 影响力和重要性 (10%)
+Scoring criteria (0-100):
+- Technical depth and accuracy (30%)
+- Practicality and actionability (25%) 
+- Content novelty and forward-thinking (20%)
+- Writing quality and clarity (15%)
+- Impact and importance (10%)
 
-请确保返回纯JSON格式，不要包含其他文字说明。
-`;
+Please return pure JSON format without any other explanations.`;
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -45,11 +44,11 @@ export async function analyzeArticle(request: AIAnalysisRequest): Promise<AIAnal
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-r1-0528:free',
+        model: modelId,
         messages: [
           {
             role: 'system',
-            content: '你是一个专业的技术内容分析专家，擅长评估技术文章的质量和价值。'
+            content: 'You are a professional technical content analysis expert, skilled in evaluating the quality and value of technical articles.'
           },
           {
             role: 'user', 
@@ -133,6 +132,7 @@ export async function analyzeArticlesBatch(articles: AIAnalysisRequest[]): Promi
  */
 export async function generateDailyReportSummary(articles: Article[]): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
+  const modelId = process.env.OPENROUTER_MODEL_ID || 'google/gemini-2.5-flash-lite-preview-06-17';
   
   if (!apiKey) {
     return '今日技术资讯汇总，包含AI、编程、产品等多个领域的精选内容。';
@@ -147,33 +147,31 @@ export async function generateDailyReportSummary(articles: Article[]): Promise<s
     `${a.title} (${a.score}分) - ${a.summary}`
   ).join('\n');
   
-  const prompt = `
-根据以下今日的优质技术文章，生成一个100字左右的日报总结：
+  const prompt = `Generate a daily tech report summary (about 100 words) based on the following high-quality technical articles:
 
 ${articleSummaries}
 
-要求：
-1. 突出今日技术趋势和重要动态
-2. 语言简洁有趣，适合技术从业者阅读
-3. 体现AI创业者的视角
-4. 100字左右
+Requirements:
+1. Highlight today's technology trends and important developments
+2. Use concise and engaging language suitable for tech professionals
+3. Reflect an AI entrepreneur's perspective
+4. About 100 words in Chinese
 
-请直接返回总结内容，不要包含其他格式。
-`;
+Please return only the summary content without any additional formatting.`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: modelId,
         messages: [
           {
             role: 'system',
-            content: '你是一个专业的技术编辑，擅长撰写技术日报摘要。'
+            content: 'You are a professional tech editor, skilled in writing technical daily report summaries.'
           },
           {
             role: 'user',
